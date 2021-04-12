@@ -20,7 +20,6 @@ void setup() {
 }
 
 void loop() {
-
   MavLink_receive();
 }
 
@@ -35,77 +34,143 @@ void MavLink_receive(){
     //Get new message
     if(mavlink_parse_char(chan, byte, &msg, &status))
     {
-      printf("Received message with ID %d, sequence: %d from component %d of system %d\n", msg.msgid, msg.seq, msg.compid, msg.sysid);
+     
       //Handle new message from autopilot
-      switch(msg.msgid)
-      {
+      switch(msg.msgid){
 
       case MAVLINK_MSG_ID_GPS_RAW_INT:
       {
         mavlink_gps_raw_int_t packet;
         mavlink_msg_gps_raw_int_decode(&msg, &packet);
-        
-        Serial.print("\nGPS Fix: ");Serial.println(packet.fix_type);
-        Serial.print("GPS Latitude: ");Serial.println(packet.lat);
-        Serial.print("GPS Longitude: ");Serial.println(packet.lon);
-        Serial.print("GPS Speed: ");Serial.println(packet.vel);
-        Serial.print("Sats Visible: ");Serial.println(packet.satellites_visible);
+        Serial.print("|->>> GPS RAW INT |  ");
+        Serial.print("GPS Fix: ");
+        Serial.print(packet.fix_type);
+        Serial.print(" - Sats Visible: ");
+        Serial.print(packet.satellites_visible);
+        Serial.print(" - Latitude: ");
+        Serial.print(packet.lat);
+        Serial.print(" - Longitude: ");
+        Serial.print(packet.lon);
+        Serial.print(" - Speed: ");
+        Serial.println(packet.vel);
+        Serial.println("-------------------------------------------------");
         break;
        }
        case MAVLINK_MSG_ID_HEARTBEAT:
-        {
+       {
           mavlink_heartbeat_t hb;
           mavlink_msg_heartbeat_decode(&msg, &hb);
-
-          Serial.println("\n\n\nHeartBeat");
-          Serial.print("system_status: ");
-          Serial.println(hb.system_status);
-          Serial.println("\n\n\n");
-
-          //heartbeats++;
-          
+          Serial.print("|->>> Heartbeat |  system_status: ");
+          Serial.println(hb.system_status);  
+          Serial.println("-------------------------------------------------");
           break;
-        }
-        case MAVLINK_MSG_ID_GPS_STATUS:
-        {
-          Serial.println("GPS_STATUS");
-          mavlink_gps_status_t gpsStatus;
-          mavlink_msg_gps_status_decode(&msg, &gpsStatus);
-
-          Serial.print("Number of satellites: ");
-          Serial.println(gpsStatus.satellites_visible);
+       }
+       case MAVLINK_MSG_ID_GPS_STATUS:
+       {
+//          Serial.print("|->>> GPS_STATUS | ");
+//          mavlink_gps_status_t gpsStatus;
+//          mavlink_msg_gps_status_decode(&msg, &gpsStatus);
+//          Serial.print("Number of satellites: ");
+//          Serial.println(gpsStatus.satellites_visible);
+//          Serial.println("-------------------------------------------------");          
           break;
         }
         case MAVLINK_MSG_ID_GLOBAL_POSITION_INT:
         {
-          Serial.println("GPS Position!");
+          Serial.print("|->>> GPS Position INT | ");
           mavlink_global_position_int_t gpsPos;
           mavlink_msg_global_position_int_decode(&msg, &gpsPos);
-
           Serial.print("Relative Altitude: ");
-          Serial.println(gpsPos.relative_alt);
-          Serial.print("Latitude: ");
+          Serial.print(gpsPos.relative_alt);
+          Serial.print(" - Latitude: ");
           Serial.print(gpsPos.lat);
           Serial.print("  -  Longitude: ");
-          Serial.println(gpsPos.lon);
-          Serial.print("Altitude above MSL: ");
+          Serial.print(gpsPos.lon);
+          Serial.print(" - Altitude above MSL: ");
           Serial.println(gpsPos.alt);
+          Serial.println("-------------------------------------------------");          
           break;
         }
-
-
-
-      
+        case MAVLINK_MSG_ID_SYS_STATUS:
+        {
+          //Serial.print("|->>> Msg de SYS_STATUS | Load: ");
+          mavlink_sys_status_t ss;
+          mavlink_msg_sys_status_decode(&msg, &ss);
+//          Serial.print(ss.load);
+//          Serial.print(" - voltage_battery: ");
+//          Serial.print(ss.voltage_battery);
+//          Serial.print(" - battery_remaining: ");
+//          Serial.print(ss.battery_remaining);
+//          Serial.print(" - drop_rate_comm: ");
+//          Serial.print(ss.errors_comm);          
+//          Serial.print(" - errors_comm: ");
+//          Serial.println(ss.drop_rate_comm);          
+//          Serial.println("-------------------------------------------------");
+          break;
+        }case MAVLINK_MSG_ID_SYSTEM_TIME:
+        {
+//          Serial.print("|->>> Msg de SYSTEM_TIME , id = 2 | Unix time:  ");
+//          mavlink_system_time_t st;
+//          mavlink_msg_system_time_decode(&msg, &st);
+//          uint32_t low = st.time_unix_usec % 0xFFFFFFFF; 
+//          uint32_t high = (st.time_unix_usec >> 32) % 0xFFFFFFFF;
+//          Serial.print(low); 
+//          Serial.print(high); 
+//          Serial.print(" - Boot time: ");
+//          Serial.print(st.time_boot_ms); 
+//          Serial.println("-------------------------------------------------");
+          break;
+        }case 22:
+        {
+          //Serial.println("|->>> Msg de PARAM_VALUE, id = 22");
+          break;
+        }
+        case 27:
+        {
+          //Serial.println("|->>> Msg de RAW_IMU, id = 27");
+          break;
+        }
+        case 29:
+        {
+          //Serial.println("|->>> Msg de SCALED_PRESSURE, id = 29");
+          break;
+        }case 30:
+        {
+          //Serial.println("|->>> Msg de ATTITUDE, id = 30");
+          break;
+        }
+        case 35:
+        {
+          //Serial.println("|->>> Msg de RC_CHANNELS_RAW, id = 35");
+          break;
+        }case 36:
+        {
+          //Serial.println("|->>> Msg de SERVO_OUTPUT_RAW, id = 36");
+          break;
+        }
+        case 42:
+        {
+          //Serial.println("|->>> Msg de MISSION_CURRENT, id = 42");
+          break;
+        }case 62:
+        {
+          //Serial.println("|->>> Msg de NAV_CONTROLLER_OUTPUT, id = 62");
+          break;
+        }
+        case 74:
+        {
+          //Serial.println("|->>> Msg de VFR_HUD, id = 74");
+          break;
+        }
       default:
-           Serial.println("Mensagem fora do switch");
-
-
+           //Serial.println("Mensagem fora do switch\n");
+           printf("**** not predicted: Received message with ID %d, sequence: %d from component %d of system %d\n", msg.msgid, msg.seq, msg.compid, msg.sysid);
       }
     }
 //    else {
-//              Serial.print("Serial do drone não parseada com:");
-//              Serial.println(byte);
-//              //delay(2000);
+//          Serial.print("Serial do drone não parseada com:");
+//          Serial.println(byte);
+//
 //    }
   }
   //Serial.println("Saindo de MavLink_receive()");
