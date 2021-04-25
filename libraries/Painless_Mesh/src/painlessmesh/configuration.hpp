@@ -26,7 +26,7 @@
 #define MAX_MESSAGE_QUEUE 50 // The original MAX_MESSAGE_QUEUE value was 50 - GrADyS
 
 #define NODE_TIMEOUT 2 * TASK_SECOND // The original NODE_TIMEOUT value was 10 - GrADyS
-#define SCAN_INTERVAL 15 * TASK_SECOND  // AP scan period in ms // The original NODE_TIMEOUT value was 15 - GrADyS
+#define SCAN_INTERVAL 10 * TASK_SECOND  // AP scan period in ms // The original NODE_TIMEOUT value was 15 - GrADyS
 
 #ifdef ESP32
 #include <AsyncTCP.h>
