@@ -16,18 +16,6 @@
   This program is distributed in the hope that it will be useful, but WITHOUT ANY WARRANTY; without even the implied warranty of
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
   You should have received a copy of the GNU General Public License along with this program.  If not, see <https://www.gnu.org/licenses/>.  
- 
-  Version: 1.1.3
-  
-  Version Modified By   Date      Comments
-  ------- -----------  ---------- -----------
-  1.0.0    K Hoang     14/09/2020 Initial coding to add support to STM32 using built-in Ethernet (Nucleo-144, DISCOVERY, etc).
-  1.0.1    K Hoang     09/10/2020 Restore cpp code besides Impl.h code.
-  1.0.2    K Hoang     09/11/2020 Make Mutex Lock and delete more reliable and error-proof
-  1.1.0    K Hoang     23/12/2020 Add HTTP PUT, PATCH, DELETE and HEAD methods
-  1.1.1    K Hoang     24/12/2020 Prevent crash if request and/or method not correct.
-  1.1.2    K Hoang     11/02/2021 Rename _lock and _unlock to avoid conflict with AsyncWebServer library
-  1.1.3    K Hoang     25/02/2021 Fix non-persistent Connection header bug
  *****************************************************************************************************************************/
 
   // Dweet.io POST client. Connects to dweet.io once every ten seconds, sends a POST request and a request body.
@@ -42,7 +30,7 @@ const char POST_ServerAddress[] = "dweet.io";
 String dweetName = "/dweet/for/pinA0-Read?";
 
 // 60s = 60 seconds to not flooding the server
-#define HTTP_REQUEST_INTERVAL_MS     60000
+#define HTTP_REQUEST_INTERVAL_MS     10000
 
 #include <AsyncHTTPRequest_Generic.h>           // https://github.com/khoih-prog/AsyncHTTPRequest_Generic
 
@@ -65,14 +53,14 @@ void sendRequest(void)
     postData += analogRead(A0);
 
     Serial.println("\nMaking new POST request");
-  
+
     requestOpenResult = request.open("POST", (POST_ServerAddress + dweetName + postData).c_str() );
     
     if (requestOpenResult)
     {
       // Only send() if open() returns true, or crash
       request.send();
-    }
+    } 
     else
     {
       Serial.println("Can't send bad request");

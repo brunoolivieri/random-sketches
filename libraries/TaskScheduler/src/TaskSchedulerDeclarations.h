@@ -23,9 +23,10 @@
 // #define _TASK_INLINE             // Make all methods "inline" - needed to support some multi-tab, multi-file implementations
 // #define _TASK_TIMEOUT            // Support for overall task timeout
 // #define _TASK_OO_CALLBACKS       // Support for callbacks via inheritance
-// #define _TASK_DEFINE_MILLIS      // Force forward declaration of millis() and micros() "C" style
 // #define _TASK_EXPOSE_CHAIN       // Methods to access tasks in the task chain
 // #define _TASK_SCHEDULING_OPTIONS // Support for multiple scheduling options
+// #define _TASK_DEFINE_MILLIS      // Force forward declaration of millis() and micros() "C" style
+// #define _TASK_EXTERNAL_TIME      // Custom millis() and micros() methods
 
 class Scheduler;
 
@@ -57,6 +58,10 @@ class Scheduler;
 #define INLINE
 #endif
 
+#ifdef _TASK_EXTERNAL_TIME
+#define _task_millis()  external_millis()
+#define _task_micros()  external_micros()
+#endif  //  _TASK_EXTERNAL_TIME
 
 #ifndef _TASK_MICRO_RES
 
@@ -77,10 +82,17 @@ class Scheduler;
 
 #ifdef _TASK_STATUS_REQUEST
 
+#define TASK_SR_OK          0
+#define TASK_SR_ERROR       (-1)
+#define TASK_SR_TIMEOUT     (-99)
+ 
 #define _TASK_SR_NODELAY    1
 #define _TASK_SR_DELAY      2
 
+class Scheduler;
+
 class StatusRequest {
+  friend class Scheduler;
   public:
     INLINE StatusRequest();
     INLINE void setWaiting(unsigned int aCount = 1);
@@ -90,10 +102,22 @@ class StatusRequest {
     INLINE bool completed();
     INLINE int getStatus();
     INLINE int getCount();
+    
+#ifdef _TASK_TIMEOUT
+    INLINE void setTimeout(unsigned long aTimeout) { iTimeout = aTimeout; };
+    INLINE unsigned long getTimeout() { return iTimeout; };
+    INLINE void resetTimeout();
+    INLINE long untilTimeout();
+#endif
 
   _TASK_SCOPE:
     unsigned int  iCount;          // number of statuses to wait for. waiting for more that 65000 events seems unreasonable: unsigned int should be sufficient
     int           iStatus;         // status of the last completed request. negative = error;  zero = OK; positive = OK with a specific status
+
+#ifdef _TASK_TIMEOUT
+    unsigned long            iTimeout;               // Task overall timeout
+    unsigned long            iStarttime;             // millis at task start time
+#endif // _TASK_TIMEOUT
 };
 #endif  // _TASK_STATUS_REQUEST
 
@@ -125,12 +149,10 @@ typedef struct  {
 #endif
 
 #ifdef _TASK_TIMEOUT
-    bool  timeout    : 1;           // indication if task is waiting on the status request
+    bool  timeout    : 1;           // indication if task timed out
 #endif
 
 } __task_status;
-
-class Scheduler;
 
 
 class Task {
@@ -297,6 +319,10 @@ class Scheduler {
     INLINE void init();
     INLINE void addTask(Task& aTask);
     INLINE void deleteTask(Task& aTask);
+    INLINE void pause() { iPaused = true; };
+    INLINE void resume() { iPaused = false; };
+    INLINE void enable() { iEnabled = true; };
+    INLINE void disable() { iEnabled = false; };
 #ifdef _TASK_PRIORITY
     INLINE void disableAll(bool aRecursive = true);
     INLINE void enableAll(bool aRecursive = true);
@@ -341,6 +367,7 @@ class Scheduler {
   _TASK_SCOPE:
     Task       *iFirst, *iLast, *iCurrent;        // pointers to first, last and current tasks in the chain
 
+    bool       iPaused, iEnabled;
 #ifdef _TASK_SLEEP_ON_IDLE_RUN
     bool        iAllowSleep;                      // indication if putting MC to IDLE_SLEEP mode is allowed by the program at this time.
 #endif  // _TASK_SLEEP_ON_IDLE_RUN

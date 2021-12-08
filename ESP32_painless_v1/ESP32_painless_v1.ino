@@ -24,7 +24,7 @@ SimpleList<uint32_t> nodes;
 // User stub
 void sendMessage() ; // Prototype so PlatformIO doesn't complain
 
-Task taskSendMessage( TASK_SECOND * 1 , TASK_FOREVER, &sendMessage );
+Task taskSendMessage( TASK_SECOND * 5 , TASK_FOREVER, &sendMessage );
 
 // Task to blink the number of nodes
 Task blinkNoNodes;
@@ -36,7 +36,7 @@ void sendMessage() {
   msg += mesh.getNodeId();
   msg += " - myFreeMemory: " + String(ESP.getFreeHeap());
   mesh.sendBroadcast( msg );
-  taskSendMessage.setInterval( random( TASK_SECOND * 1, TASK_SECOND * 5 ));
+  taskSendMessage.setInterval( random( TASK_SECOND * 4, TASK_SECOND * 8 ));
 
   // blink
   if (calc_delay) {

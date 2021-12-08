@@ -17,7 +17,7 @@
   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for more details.
   You should have received a copy of the GNU General Public License along with this program.  If not, see <https://www.gnu.org/licenses/>.  
  
-  Version: 1.1.3
+  Version: 1.4.1
   
   Version Modified By   Date      Comments
   ------- -----------  ---------- -----------
@@ -28,6 +28,13 @@
   1.1.1    K Hoang     24/12/2020 Prevent crash if request and/or method not correct.
   1.1.2    K Hoang     11/02/2021 Rename _lock and _unlock to avoid conflict with AsyncWebServer library
   1.1.3    K Hoang     25/02/2021 Fix non-persistent Connection header bug
+  1.1.4    K Hoang     21/03/2021 Fix `library.properties` dependency
+  1.1.5    K Hoang     22/03/2021 Fix dependency on STM32AsyncTCP Library
+  1.2.0    K Hoang     11/04/2021 Add support to LAN8720 using STM32F4 or STM32F7
+  1.3.0    K Hoang     09/07/2021 Add support to WT32_ETH01 (ESP32 + LAN8720) boards
+  1.3.1    K Hoang     09/10/2021 Update `platform.ini` and `library.json`
+  1.4.0    K Hoang     23/11/2021 Fix crashing bug when request a non-existing IP
+  1.4.1    K Hoang     29/11/2021 Auto detect ESP32 core version and improve connection time for WT32_ETH01
  *****************************************************************************************************************************/
  
 #pragma once
@@ -179,6 +186,8 @@ bool  AsyncHTTPRequest::open(const char* method, const char* URL)
     sprintf(hostName, "%s:%d", _URL->host, _URL->port);
     _addHeader("host", hostName);
     
+    AHTTP_LOGDEBUG1("open: conneting to hostname =", hostName);
+    
     SAFE_DELETE_ARRAY(hostName)
     
     _lastActivity = millis();
@@ -187,8 +196,6 @@ bool  AsyncHTTPRequest::open(const char* method, const char* URL)
     _requestReadyToSend = true;
     //////
     
-    AHTTP_LOGDEBUG1("open: conneting to hostname =", hostName);
-
     return _connect();
   }
   else
@@ -254,8 +261,12 @@ bool AsyncHTTPRequest::send(String body)
     return false;
   }
   //////
+  
+  AHTTP_LOGERROR1("01) send String body =", body);
 
   MUTEX_LOCK(false)
+  
+  AHTTP_LOGERROR1("02) send String body =", body);
   
   _addHeader("Content-Length", String(body.length()).c_str());
   
@@ -266,8 +277,14 @@ bool AsyncHTTPRequest::send(String body)
     return false;
   }
   
+  AHTTP_LOGERROR1("1) send String body =", body);
+  
   _request->write(body);
+  
+  AHTTP_LOGERROR1("2) send String body =", body);
   _send();
+  
+  AHTTP_LOGERROR1("3) send String body =", body);
   
   _AHTTP_unlock;
   
@@ -785,12 +802,27 @@ size_t  AsyncHTTPRequest::_send()
 
   AHTTP_LOGDEBUG1("_send(), _request->available =", _request->available());
 
+#if 1
+  if ( ! _client->connected())
+  {
+    AHTTP_LOGDEBUG("!connected");
+
+    return 0;
+  }
+  else if ( ! _client->canSend())
+  {
+    AHTTP_LOGDEBUG("*can't send");
+
+    return 0;
+  }
+#else
   if ( ! _client->connected() || ! _client->canSend())
   {
     AHTTP_LOGDEBUG("*can't send");
 
     return 0;
   }
+#endif
 
   size_t supply = _request->available();
   size_t demand = _client->space();
@@ -1004,17 +1036,17 @@ void  AsyncHTTPRequest::_onDisconnect(AsyncClient* client)
   
   if (_readyState < readyStateOpened)
   {
+    AHTTP_LOGDEBUG("HTTPCODE_NOT_CONNECTED");
     _HTTPcode = HTTPCODE_NOT_CONNECTED;
   }
   else if (_HTTPcode > 0 &&
            (_readyState < readyStateHdrsRecvd || (_contentRead + _response->available()) < _contentLength))
   {
+    AHTTP_LOGDEBUG("HTTPCODE_CONNECTION_LOST");
     _HTTPcode = HTTPCODE_CONNECTION_LOST;
   }
 
-  SAFE_DELETE(_client)
-  
-  _client = nullptr;
+  AHTTP_LOGDEBUG1("_HTTPcode = ", _HTTPcode);
   
   SAFE_DELETE_ARRAY(_connectedHost)
   
